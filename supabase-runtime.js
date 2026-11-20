@@ -42,17 +42,25 @@
   const snapCol = rows => ({ docs: rows.map(r => ({ id: idOf(r.path), data: () => r.data })), metadata: { fromCache: false } });
 
   async function refresh(l) {
+    let snap;
     try {
       if (l.kind === "doc") {
         const { data, error } = await sb.from("hub_docs").select("path,data").eq("path", l.path).maybeSingle();
         if (error) throw error;
-        if (l.live) l.cb(snapDoc(l.path, data));
+        snap = snapDoc(l.path, data);
       } else {
         const { data, error } = await sb.from("hub_docs").select("path,data").eq("collection", l.path).order("path");
         if (error) throw error;
-        if (l.live) l.cb(snapCol(data || []));
+        snap = snapCol(data || []);
       }
-    } catch (e) { if (l.live && l.onErr) l.onErr(err("unavailable", e.message)); }
+    } catch (e) {
+      console.error("Sponsorship Hub: couldn't load " + l.path + ":", e && (e.message || e), e && e.code ? "(code " + e.code + ")" : "", e && e.hint ? "Hint: " + e.hint : "");
+      if (l.live && l.onErr) l.onErr(err("unavailable", e && e.message));
+      return;
+    }
+    if (!l.live) return;
+    try { l.cb(snap); }
+    catch (e) { console.error("Sponsorship Hub: the page couldn't show " + l.path + ":", e); }
   }
   let channel = null;
   function ensureChannel() {
