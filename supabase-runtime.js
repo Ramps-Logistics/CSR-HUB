@@ -79,7 +79,10 @@
     listeners.add(l); ensureChannel(); refresh(l);
     return () => { l.live = false; listeners.delete(l); };
   }
-  const touch = path => listeners.forEach(l => { if ((l.kind === "doc" && l.path === path) || (l.kind === "col" && l.path === collectionOf(path))) refresh(l); });
+  // After a save, reload the affected lists before the save resolves, so the page sees its own change straight away
+  // (as it did on claude.ai). A slow reload never blocks the save for more than a few seconds.
+  const touch = path => { const jobs = []; listeners.forEach(l => { if ((l.kind === "doc" && l.path === path) || (l.kind === "col" && l.path === collectionOf(path))) jobs.push(refresh(l)); });
+    return Promise.race([Promise.all(jobs), new Promise(r => setTimeout(r, 4000))]); };
   const dbErr = e => { const c = e && (e.code === "42501" || /row-level security|permission/i.test(e.message || "")) ? "invalid_argument" : e && e.code === "P0002" ? "not_found" : "unavailable"; return err(c, e && e.message); };
 
   const db = {
@@ -88,16 +91,16 @@
         id: idOf(path),
         onSnapshot: (cb, onErr) => listen("doc", path, cb, onErr),
         async get() { const { data, error } = await sb.from("hub_docs").select("path,data").eq("path", path).maybeSingle(); if (error) throw dbErr(error); return snapDoc(path, data); },
-        async set(data) { const { error } = await sb.from("hub_docs").upsert({ path, data }); if (error) throw dbErr(error); touch(path); },
-        async update(patch) { const { error } = await sb.rpc("hub_merge", { p_path: path, p_patch: patch }); if (error) throw dbErr(error); touch(path); },
-        async delete() { const { error } = await sb.from("hub_docs").delete().eq("path", path); if (error) throw dbErr(error); touch(path); }
+        async set(data) { const { error } = await sb.from("hub_docs").upsert({ path, data }); if (error) throw dbErr(error); await touch(path); },
+        async update(patch) { const { error } = await sb.rpc("hub_merge", { p_path: path, p_patch: patch }); if (error) throw dbErr(error); await touch(path); },
+        async delete() { const { error } = await sb.from("hub_docs").delete().eq("path", path); if (error) throw dbErr(error); await touch(path); }
       };
     },
     collection(path) {
       return {
         onSnapshot: (cb, onErr) => listen("col", path, cb, onErr),
         doc: id => db.doc(path + "/" + id),
-        async add(data) { const id = newId(); const { error } = await sb.from("hub_docs").insert({ path: path + "/" + id, data }); if (error) throw dbErr(error); touch(path + "/" + id); return { id }; }
+        async add(data) { const id = newId(); const { error } = await sb.from("hub_docs").insert({ path: path + "/" + id, data }); if (error) throw dbErr(error); await touch(path + "/" + id); return { id }; }
       };
     }
   };
@@ -187,7 +190,7 @@
       res = await realFetch(CFG.supabaseUrl + "/functions/v1/claude", {
         method: "POST", signal: opts.signal,
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: CFG.supabaseAnonKey },
-        body: JSON.stringify({ prompt: String(prompt), images, json: !!wantJson, tier: opts.modelTier === "quick" ? "quick" : "default" })
+        body: JSON.stringify({ prompt: String(prompt), images, json: !!wantJson, tier: opts.modelTier === "quick" ? "quick" : "default", research: !!opts.research })
       });
     } catch (e) { if (e && e.name === "AbortError") throw err("cancelled"); throw err("network", e && e.message); }
     const out = await res.json().catch(() => ({}));
