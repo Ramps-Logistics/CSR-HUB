@@ -7,7 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: a friendly dispatch desk. Pill tabs, dotted-paper background, soft cards. Rampy the mochi box reads each request, the gauge fills, a sticker stamps the verdict, and the request travels: logged, sent to VP, VP decision, applicant emailed. */
+[hidden]{display:none!important}
+/* Layout: a friendly dispatch desk. Pill tabs, dotted-paper background, soft cards. Poppi the mochi box reads each request, the gauge fills, a sticker stamps the verdict, and the request travels: logged, sent to VP, VP decision, applicant emailed. */
 :root{
   --bg:#F4F6FB; --dot:#DCE2F0; --surface:#FFFFFF; --sunk:#ECEFF7; --ink:#1F2843; --muted:#616B88; --line:#DEE3EF; --shadow:rgba(31,40,67,.18);
   --accent:#3D63DD; --accent-ink:#FFFFFF; --accent-soft:#E4EAFD;
@@ -94,6 +95,14 @@ section.view{display:grid;gap:22px}
 .hello{display:flex;justify-content:space-between;align-items:center;gap:16px 24px;flex-wrap:wrap;background:var(--accent-soft);border-radius:var(--r);padding:20px 24px}
 .hello-main{display:grid;gap:6px;min-width:0}
 .hello h2{font-size:1.7rem}
+#hello{position:relative}
+.poppi-bubble{position:absolute;z-index:3;max-width:min(270px,calc(100vw - 150px));background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:22px;padding:10px 14px;font-weight:700;font-size:.92rem;line-height:1.4;box-shadow:0 14px 30px -18px var(--shadow);
+  opacity:0;transform:translateY(6px) scale(.92);transform-origin:0 100%;pointer-events:none;transition:opacity .35s ease,transform .35s cubic-bezier(.3,1.4,.5,1)}
+.poppi-bubble.show{opacity:1;transform:none;pointer-events:auto}
+.poppi-bubble i{position:absolute;display:block;background:var(--surface);border:1.5px solid var(--line);border-radius:50%}
+.poppi-bubble .pb-d1{width:12px;height:12px;left:-10px;bottom:-4px}
+.poppi-bubble .pb-d2{width:7px;height:7px;left:-19px;bottom:-12px}
+@media (prefers-reduced-motion: reduce){.poppi-bubble{transition:opacity .2s}}
 .hello>.btn{flex:none}
 .hello-mascot{flex:none;cursor:var(--cur-hand)}
 .hello-mascot svg{width:96px;display:block;overflow:visible}
@@ -104,6 +113,13 @@ section.view{display:grid;gap:22px}
   .alive .rp-eyes{transform-box:fill-box;transform-origin:50% 50%;animation:rp-blink 4.6s ease-in-out infinite}
   .alive .rp-s1,.alive .rp-s2{transform-box:fill-box;transform-origin:50% 50%;animation:rp-spark 1.8s ease-in-out infinite}
   .alive .rp-s2{animation-delay:-.9s}
+  .alive.calm .rp-all,.alive.calm .rp-shadow{animation-duration:4.6s}
+  .alive.sleepy .rp-all{animation:rp-sway 5s ease-in-out infinite}
+  .alive.sleepy .rp-shadow,.alive.sleepy .rp-eyes{animation:none}
+  .alive .rp-z1,.alive .rp-z2{transform-box:fill-box;transform-origin:50% 50%;animation:rp-z 3.2s ease-in-out infinite}
+  .alive .rp-z2{animation-delay:-1.6s}
+  @keyframes rp-sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg) translateY(1px)}}
+  @keyframes rp-z{0%{transform:translate(0,4px) scale(.7);opacity:0}30%{opacity:1}100%{transform:translate(6px,-9px) scale(1.1);opacity:0}}
   @keyframes rp-hop{0%,58%,100%{transform:translateY(0) scale(1,1)}66%{transform:translateY(0) scale(1.06,.92)}76%{transform:translateY(-12px) scale(.96,1.05)}86%{transform:translateY(0) scale(1.08,.9)}93%{transform:translateY(0) scale(.98,1.03)}}
   @keyframes rp-shadow{0%,58%,100%{transform:scale(1);opacity:1}76%{transform:scale(.72);opacity:.55}86%{transform:scale(1.08);opacity:1}}
   @keyframes rp-blink{0%,44%,48%,100%{transform:scaleY(1)}46%{transform:scaleY(.1)}}
@@ -788,24 +804,26 @@ function ansFromCrit(crit,audience){
 window.__ramps={assess,DEFAULT_CONFIG,parseAI,buildPrompt,KEYSET,templateEmail,emailPrompt,emailFrom,ansFromCrit};
 
 /* ---------- mascot ---------- */
-/* Mascot: Rampy the Mochi box (Korean-inspired cute). Moods: happy, meh (sweat drop), sad (tear), think, idle.
+/* Mascot: Poppi the Mochi box (Korean-inspired cute). Moods: happy, meh (sweat drop), sad (tear), think, idle.
    Parts are grouped (rp-shadow, rp-all, rp-eyes, rp-spark) so the "alive" class can animate a hop, a blink and twinkling sparkles. */
 function truck(mood,extra){
   const cx=56,cy=74,e=11,my=cy+6,ink="var(--face)",ln='stroke="'+ink+'" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"';
   let eyes="",f="";
-  if(mood==="happy")eyes='<path d="M'+(cx-e-3.5)+' '+(cy+1)+' q3.5 -5 7 0 M'+(cx+e-3.5)+' '+(cy+1)+' q3.5 -5 7 0" stroke="'+ink+'" stroke-width="2.4" fill="none" stroke-linecap="round"/>';
+  if(mood==="sleepy")eyes='<path d="M'+(cx-e-3.5)+' '+(cy-1)+' q3.5 3.5 7 0 M'+(cx+e-3.5)+' '+(cy-1)+' q3.5 3.5 7 0" stroke="'+ink+'" stroke-width="2.4" fill="none" stroke-linecap="round"/>';
+  else if(mood==="happy")eyes='<path d="M'+(cx-e-3.5)+' '+(cy+1)+' q3.5 -5 7 0 M'+(cx+e-3.5)+' '+(cy+1)+' q3.5 -5 7 0" stroke="'+ink+'" stroke-width="2.4" fill="none" stroke-linecap="round"/>';
   else{const dy=mood==="think"?-2.5:0;
     eyes='<ellipse cx="'+(cx-e)+'" cy="'+(cy+dy)+'" rx="2.6" ry="3.2" fill="'+ink+'"/><ellipse cx="'+(cx+e)+'" cy="'+(cy+dy)+'" rx="2.6" ry="3.2" fill="'+ink+'"/>'+
        '<circle cx="'+(cx-e+.9)+'" cy="'+(cy+dy-1.2)+'" r="1" fill="#fff"/><circle cx="'+(cx+e+.9)+'" cy="'+(cy+dy-1.2)+'" r="1" fill="#fff"/>';}
   if(mood==="happy")f+='<path d="M'+(cx-5)+' '+my+' q2.5 3 5 0 q2.5 3 5 0" '+ln+'/>';
   else if(mood==="meh")f+='<path d="M'+(cx-3)+' '+(my+1)+' h6" '+ln+'/><path d="M'+(cx+e+9)+' '+(cy-9)+' q3 5 0 7 q-3 -2 0 -7z" fill="var(--tear)"/>';
   else if(mood==="sad")f+='<path d="M'+(cx-4)+' '+(my+3)+' q4 -4 8 0" '+ln+'/><path d="M'+(cx-e-1)+' '+(cy+4)+' q-2.5 5 0 7 q2.5 -2 0 -7z" fill="var(--tear)"/>';
+  else if(mood==="sleepy")f+='<ellipse cx="'+cx+'" cy="'+(my+1.5)+'" rx="2.2" ry="2.8" fill="'+ink+'" opacity=".85"/>';
   else if(mood==="think")f+='<circle cx="'+cx+'" cy="'+(my+1.5)+'" r="1.8" fill="'+ink+'"/>';
   else f+='<path d="M'+(cx-3)+' '+my+' q3 3 6 0" '+ln+'/>';
   f+='<ellipse cx="'+(cx-e-5)+'" cy="'+my+'" rx="5" ry="3" fill="var(--blush)" opacity=".9"/><ellipse cx="'+(cx+e+5)+'" cy="'+my+'" rx="5" ry="3" fill="var(--blush)" opacity=".9"/>';
   const heart='<path transform="translate(91 65) scale(.5)" d="M0 8 C-9 2 -9 -6 -4 -7 C-2 -7.5 0 -6 0 -4 C0 -6 2 -7.5 4 -7 C9 -6 9 2 0 8Z" fill="var(--heart)"/>';
   const ex=mood==="think"?'<circle cx="112" cy="24" r="2.5" fill="none" stroke="var(--muted)" stroke-width="1.6"/><circle cx="120" cy="13" r="4" fill="none" stroke="var(--muted)" stroke-width="1.6"/>':
-    mood==="happy"?'<path class="rp-s1" d="M18 14 l1.8 3.6 3.6 1.8 -3.6 1.8 -1.8 3.6 -1.8 -3.6 -3.6 -1.8 3.6 -1.8z" fill="var(--sparkle)"/><path class="rp-s2" d="M114 22 l1.2 2.4 2.4 1.2 -2.4 1.2 -1.2 2.4 -1.2 -2.4 -2.4 -1.2 2.4 -1.2z" fill="var(--blush)"/>':'';
+    mood==="sleepy"?'<path class="rp-z1" d="M103 30 h7 l-7 8 h7" stroke="var(--muted)" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path class="rp-z2" d="M114 13 h5 l-5 6 h5" stroke="var(--muted)" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>':mood==="happy"?'<path class="rp-s1" d="M18 14 l1.8 3.6 3.6 1.8 -3.6 1.8 -1.8 3.6 -1.8 -3.6 -3.6 -1.8 3.6 -1.8z" fill="var(--sparkle)"/><path class="rp-s2" d="M114 22 l1.2 2.4 2.4 1.2 -2.4 1.2 -1.2 2.4 -1.2 -2.4 -2.4 -1.2 2.4 -1.2z" fill="var(--blush)"/>':'';
   return '<svg viewBox="0 0 130 120" aria-hidden="true" class="'+(extra||"")+'"><ellipse class="rp-shadow" cx="65" cy="112" rx="38" ry="4" fill="var(--sunk)"/>'+
     '<g class="rp-all"><ellipse cx="48" cy="108" rx="9" ry="5" fill="var(--kraft2)" stroke="var(--kraft-line)" stroke-width="2.4"/><ellipse cx="82" cy="108" rx="9" ry="5" fill="var(--kraft2)" stroke="var(--kraft-line)" stroke-width="2.4"/>'+
     '<rect x="20" y="30" width="90" height="76" rx="28" fill="var(--kraft)" stroke="var(--kraft-line)" stroke-width="2.6"/>'+
@@ -948,7 +966,7 @@ function loadScript(src){if(loaded[src])return loaded[src];return loaded[src]=ne
 async function ensurePdf(){if(!window.pdfjsLib){await loadScript(LIBS.pdf);}if(!window.pdfjsWorker){await loadScript(LIBS.pdfw);}window.pdfjsLib.GlobalWorkerOptions.workerSrc=LIBS.pdfw;}
 function kindOf(f){const ext=(f.name.split(".").pop()||"").toLowerCase();if(ext==="pdf"||f.type==="application/pdf")return"pdf";if(ext==="docx")return"docx";if(ext==="doc")return"doc";if(/^image\/(png|jpeg|webp)$/.test(f.type)||["png","jpg","jpeg","webp"].includes(ext))return"image";return null;}
 function addFiles(list){
-  if(S.reading){toast("Rampy is still reading the last request. Drop the next one when it's done.");return;}
+  if(S.reading){toast("Poppi is still reading the last request. Drop the next one when it's done.");return;}
   S.files=[];
   for(const f of list){
     const k=kindOf(f);
@@ -989,7 +1007,7 @@ const SAMPLE_ERR={not_granted:"Claude wasn't allowed to run for this page. Fill 
   prompt_too_large:"The documents are too long. Upload just the request letter or proposal.",session_expired:"Your session expired. Sign in again and retry."};
 function setReading(on,msg){
   S.reading=on;
-  $("#readingBox").innerHTML=on?'<div class="reading">'+truck("think","bob")+'<div class="grow"><b style="font-family:var(--f-display)">Rampy is reading</b><div class="small muted" id="readMsg">'+esc(msg||"Opening the files")+'</div></div><button type="button" class="btn sm" id="stopRead">Stop</button></div>':"";
+  $("#readingBox").innerHTML=on?'<div class="reading">'+truck("think","bob")+'<div class="grow"><b style="font-family:var(--f-display)">Poppi is reading</b><div class="small muted" id="readMsg">'+esc(msg||"Opening the files")+'</div></div><button type="button" class="btn sm" id="stopRead">Stop</button></div>':"";
   renderFiles();renderVerdict(false);
 }
 async function readAndScore(){
@@ -1038,7 +1056,7 @@ function applyAI(ai){
 }
 function aiNotesHTML(ai,title){
   const list=(t,arr,cls)=>'<div><b class="small" style="color:var('+cls+')">'+t+'</b>'+((arr||[]).length?'<ul>'+arr.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul>':'<p class="small muted">None noted.</p>')+'</div>';
-  return '<div class="who">'+truck("happy")+'<div><div class="eyebrow">Rampy\'s read</div><h3>'+esc(title)+'</h3></div></div>'+
+  return '<div class="who">'+truck("happy")+'<div><div class="eyebrow">Poppi\'s read</div><h3>'+esc(title)+'</h3></div></div>'+
     '<p>'+esc(ai.summary||"No summary came back.")+'</p>'+(ai.packageNote?'<p class="small"><b>Package:</b> '+esc(ai.packageNote)+'</p>':'')+(ai.currencyNote?'<p class="small" style="color:var(--warn);font-weight:700">'+esc(ai.currencyNote)+'</p>':'')+
     '<div class="notes3">'+list("Strengths",ai.strengths,"--good")+list("Concerns",ai.concerns,"--bad")+list("Missing information",ai.missing,"--warn")+'</div>';
 }
@@ -1049,7 +1067,7 @@ function renderAINote(){
   p.hidden=false;
   p.innerHTML=aiNotesHTML(ai,"What the request says")+
     (other.length?'<details><summary class="small" style="cursor:var(--cur-hand);font-weight:700">Evidence for the SDG, BA and branding ticks ('+other.length+')</summary><ul class="evlist">'+other.map(([k,ev])=>'<li><b>'+esc(labelFor(k))+':</b> '+esc(ev)+'</li>').join("")+'</ul></details>':'')+
-    '<p class="small muted">Rampy only ticks what the documents show. Untick or add anything before you stamp it.</p>';
+    '<p class="small muted">Poppi only ticks what the documents show. Untick or add anything before you stamp it.</p>';
 }
 
 /* ---------- saving a scored request ---------- */
@@ -1062,7 +1080,7 @@ async function saveRequest(r){
   const doc={...r,ref,assessment:a,status:"Admin review",submittedBy:S.uid,submittedAt:now,updatedAt:now,files,evidence,emails:[],
     ai:S.ai?{summary:S.ai.summary,strengths:S.ai.strengths,concerns:S.ai.concerns,missing:S.ai.missing,packageNote:S.ai.packageNote,currencyNote:S.ai.currencyNote}:null,
     sourceText:S.sourceText||"",
-    log:[{at:now,by:S.uid,desk:"Intake",action:(S.ai?"Read by Rampy and scored ":"Scored ")+a.sop.toFixed(2)+"/4.4, BA "+(a.ba.net>0?"+":"")+a.ba.net+": "+a.verdictLabel+" ("+a.tier+")",note:""}]};
+    log:[{at:now,by:S.uid,desk:"Intake",action:(S.ai?"Read by Poppi and scored ":"Scored ")+a.sop.toFixed(2)+"/4.4, BA "+(a.ba.net>0?"+":"")+a.ba.net+": "+a.verdictLabel+" ("+a.tier+")",note:""}]};
   try{const ref2=await S.db.collection("sponsorships").add(doc);
     toast(ref+" scored "+a.verdictLabel+". Next: admin review.");if(a.verdict==="proceed")confetti();
     S.ai=null;S.sourceText="";return ref2.id;}
@@ -1077,16 +1095,73 @@ function waybill(s,showNext){
    '<span class="sub"><span class="scorepill '+esc(a.sopBand)+'">'+(+a.sop||0).toFixed(2)+'</span><span class="chip '+v+'">'+esc(VERDICT[v].label)+(ov?' · override':'')+'</span><span>'+money(a.amount)+'</span>'+
    (showNext&&nx?'<span class="next">'+esc(nx.label)+'</span>':'')+(isOpen(d)?'<span class="sla'+(sl.late?' late':'')+'">Day '+sl.day+' of '+S.config.slaDays+'</span>':'')+'</span></button>';
 }
+/* Poppi's personality: the banner greeting, mood and a short line change with the time of day. */
+const SUNNY={
+  morning:{greet:"Good morning!",mood:"happy",pace:"",lines:[
+    "Fresh day, fresh start. Let's make some good things happen!",
+    "Rise and shine! Today's a great day to make a difference.",
+    "New day, new chances to do some good. You've got this!",
+    "Morning, sunshine! Grab a coffee and let's get going."]},
+  afternoon:{greet:"Good afternoon!",mood:"happy",pace:"",lines:[
+    "Quick check-in: have you had some water lately?",
+    "Don't forget to eat something good. Fuel first, then the fun stuff!",
+    "Stretch break! Stand up, roll those shoulders, then back to it.",
+    "Have you taken a proper lunch break? You deserve one.",
+    "Halfway there! A glass of water and a deep breath work wonders."]},
+  evening:{greet:"Good evening!",mood:"idle",pace:"calm",lines:[
+    "Nearly there! Wrap up what you can and leave the rest for tomorrow.",
+    "Great work today. Time to start winding down.",
+    "Let's tie up the loose ends and call it a day soon.",
+    "You did plenty today. Finish strong, then go rest!"]},
+  night:{greet:"Hey there, night owl!",mood:"sleepy",pace:"sleepy",lines:[
+    "It's late! Whatever's left will still be here tomorrow. Get some rest.",
+    "Burning the midnight oil? Don't stay up too long, okay?",
+    "Sleep is the best productivity tool. Log off soon!",
+    "Time to rest those eyes. See you bright and early!"]}
+};
+function dayPart(hr){return hr>=5&&hr<12?"morning":hr>=12&&hr<17?"afternoon":hr>=17&&hr<21?"evening":"night";}
+const sunnyPick={};
+function sunnyLine(p){const L=SUNNY[p].lines;if(sunnyPick[p]==null)sunnyPick[p]=Math.floor(Math.random()*L.length);return L[sunnyPick[p]];}
+/* Poppi's thought bubble: pops up shortly after the hub opens, stays about 9 seconds, fades away,
+   and comes back every 20 minutes with the next line for that time of day. Tapping Poppi shows one too. */
+const BUBBLE_EVERY=20*60*1000,BUBBLE_FOR=9000;
+let bubbleEl=null,bubbleHide=null,bubbleStarted=false,bubbleDue=false;
+function placeBubble(){
+  const host=$("#hello"),m=host&&host.querySelector(".hello-mascot");if(!m)return;
+  if(!bubbleEl){bubbleEl=document.createElement("div");bubbleEl.className="poppi-bubble";bubbleEl.setAttribute("role","status");bubbleEl.setAttribute("aria-live","polite");
+    bubbleEl.innerHTML='<span class="pb-text"></span><i class="pb-d1"></i><i class="pb-d2"></i>';}
+  if(bubbleEl.parentNode!==host)host.appendChild(bubbleEl);
+  // Prefer the empty space to the right of the greeting; on narrow screens, float above Poppi's head instead.
+  const hr=host.getBoundingClientRect(),h2=host.querySelector("h2"),btn=host.querySelector(".btn");let placed=false;
+  if(h2){const rg=document.createRange();rg.selectNodeContents(h2);const tr=rg.getBoundingClientRect(),r2=h2.getBoundingClientRect();
+    const b=btn&&btn.getBoundingClientRect(),limit=(b&&b.left>r2.left?b.left-hr.left-18:hr.width-18),left=tr.right-hr.left+28,room=limit-left;
+    if(room>=200){Object.assign(bubbleEl.style,{left:left+"px",bottom:(hr.bottom-r2.bottom+2)+"px",maxWidth:Math.min(300,room)+"px"});placed=true;}}
+  if(!placed)Object.assign(bubbleEl.style,{left:(m.offsetLeft+m.offsetWidth-4)+"px",bottom:(host.clientHeight-m.offsetTop-m.offsetHeight*.45)+"px",maxWidth:""});
+  if(!bubbleStarted){bubbleStarted=true;setTimeout(()=>showBubble(),1500);
+    setInterval(()=>showBubble(),BUBBLE_EVERY);
+    document.addEventListener("visibilitychange",()=>{if(!document.hidden&&bubbleDue)showBubble();});}
+}
+function showBubble(byTap){
+  const onDash=!$("#v-dashboard").hidden;
+  if(!byTap&&(document.hidden||!onDash)){bubbleDue=true;return;}  // wait until the person is looking
+  if(!bubbleEl||!bubbleEl.isConnected)return;
+  bubbleDue=false;
+  const p=dayPart(new Date().getHours()),L=SUNNY[p].lines;
+  sunnyPick[p]=sunnyPick[p]==null?Math.floor(Math.random()*L.length):(sunnyPick[p]+1)%L.length;
+  bubbleEl.querySelector(".pb-text").textContent=L[sunnyPick[p]];
+  placeBubble();bubbleEl.classList.add("show");
+  clearTimeout(bubbleHide);bubbleHide=setTimeout(()=>bubbleEl.classList.remove("show"),BUBBLE_FOR);
+}
 function renderDashboard(){
   const yr=String(new Date().getFullYear()),all=S.sponsorships;
   const open=all.filter(s=>isOpen(s.data));
   const todo=open.filter(s=>s.data.status!=="With VP").sort((a,b)=>a.data.submittedAt<b.data.submittedAt?-1:1);
   const withVp=open.filter(s=>s.data.status==="With VP").sort((a,b)=>(a.data.vpSentAt||"")<(b.data.vpSentAt||"")?-1:1);
   const late=open.filter(s=>slaInfo(s.data).late).length;
-  const h=new Date().getHours(),greet=h<12?"Good morning":h<17?"Good afternoon":"Good evening";
+  const h=new Date().getHours(),part=dayPart(h),P=SUNNY[part],greet=P.greet,mood=part==="night"?"sleepy":late?"meh":P.mood;
   const canAct=!S.readOnly&&!!S.db;
   const msg=!(S.got.sp||!S.db)?'Loading the pipeline…':(todo.length?'<b>'+todo.length+'</b> request'+(todo.length>1?'s need':' needs')+' an email or an update'+(withVp.length?', and '+withVp.length+' '+(withVp.length>1?'are':'is')+' with the VP':'')+'.':(withVp.length?withVp.length+' request'+(withVp.length>1?'s are':' is')+' with the VP. Nothing else needs you right now.':'Nothing needs you right now.'))+(late?' '+late+' '+(late>1?'are':'is')+' past the '+S.config.slaDays+'-day reply window.':'');
-  $("#hello").innerHTML='<div class="hello-mascot" data-mood="'+(todo.length?"happy":late?"meh":"idle")+'" title="Hi, I\x27m Rampy!">'+truck(todo.length?"happy":late?"meh":"idle","alive")+'</div><div class="hello-main"><h2>'+greet+'!</h2><p>'+msg+'</p></div>'+(canAct?'<a class="btn primary" href="#new">Log a new request</a>':'');
+  $("#hello").innerHTML='<div class="hello-mascot" data-mood="'+mood+'" data-pace="'+P.pace+'" title="Hi, I\x27m Poppi!">'+truck(mood,"alive "+P.pace)+'</div><div class="hello-main"><h2>'+greet+'</h2><p>'+msg+'</p></div>'+(canAct?'<a class="btn primary" href="#new">Log a new request</a>':'');placeBubble();
   const thisYr=all.filter(s=>(s.data.submittedAt||"").slice(0,4)===yr);
   const avg=thisYr.length?thisYr.reduce((n,s)=>n+(+s.data.assessment.sop||0),0)/thisYr.length:0;
   $("#kpis").innerHTML=kpi("Requests in "+yr,thisYr.length,"logged")+kpi("To review",open.filter(s=>s.data.status==="Admin review").length,"scored, needs an admin")+kpi("To send to VP",open.filter(s=>s.data.status==="Ready for VP").length,"reviewed, not sent")+
@@ -1124,15 +1199,15 @@ async function polishDraft(s,kind){
     if(out&&typeof out.subject==="string"&&typeof out.body==="string"&&out.body.trim().length>40){
       let subj=out.subject.trim().slice(0,200);const ref="["+s.data.ref+"]";if(subj.indexOf(ref)<0)subj=ref+" "+subj;
       Object.assign(dr,{subject:subj,body:out.body.trim().slice(0,8000),polished:true});
-    }else toast("Rampy's draft didn't come back right, so the standard wording is shown.");
-  }catch(e){if(!(e&&e.code==="cancelled"))toast((e&&SAMPLE_ERR[e.code])||"Rampy couldn't write this one, so the standard wording is shown.");}
+    }else toast("Poppi's draft didn't come back right, so the standard wording is shown.");
+  }catch(e){if(!(e&&e.code==="cancelled"))toast((e&&SAMPLE_ERR[e.code])||"Poppi couldn't write this one, so the standard wording is shown.");}
   S.writing[k]=false;renderDrawer(false,true);
 }
 function composerHTML(s,kind,intro){
   const d=s.data,k=draftKey(s.id,kind),dr=ensureDraft(s,kind),w=!!S.writing[k];
   const noTo=!dr.to;
   return '<div class="composer" id="composer" data-kind="'+kind+'">'+(intro?'<p class="small muted">'+intro+'</p>':'')+
-    (w?'<div class="writing">'+truck("think","bob")+'<span>Rampy is writing this email. You can edit it once it lands.</span><button type="button" class="btn sm" data-stopwrite="'+kind+'">Use standard wording</button></div>':'')+
+    (w?'<div class="writing">'+truck("think","bob")+'<span>Poppi is writing this email. You can edit it once it lands.</span><button type="button" class="btn sm" data-stopwrite="'+kind+'">Use standard wording</button></div>':'')+
     '<div class="meta"><label for="em-to">To</label><input type="email" id="em-to" value="'+esc(dr.to)+'" placeholder="'+(kind==="vpReview"?"Add the VP's email in Setup":"applicant@organisation.org")+'">'+
     '<label for="em-cc">Cc</label><input type="text" id="em-cc" value="'+esc(dr.cc)+'">'+
     '<label for="em-subj">Subject</label><input type="text" id="em-subj" value="'+esc(dr.subject)+'"></div>'+
@@ -1140,7 +1215,7 @@ function composerHTML(s,kind,intro){
     (noTo?'<p class="small" style="color:var(--warn);font-weight:700">'+(kind==="vpReview"?"No VP email yet. Add it in Setup, or type it above.":"No email address on the request. Type the applicant's address above.")+'</p>':'')+
     '<div class="actions"><button type="button" class="btn primary" data-copy="all">Copy email</button><button type="button" class="btn sm" data-copy="subject">Copy subject</button><button type="button" class="btn sm" data-copy="body">Copy body</button>'+
     '<a class="btn sm" id="mailtoBtn" href="'+esc(mailtoHref(dr))+'">Open in Outlook</a>'+
-    (S.sample&&!w?'<button type="button" class="link small" data-rewrite="'+kind+'">Rewrite with Rampy</button>':'')+'</div>'+
+    (S.sample&&!w?'<button type="button" class="link small" data-rewrite="'+kind+'">Rewrite with Poppi</button>':'')+'</div>'+
     '<p class="small muted">Paste it into a new Outlook email and send it. "Open in Outlook" starts the email for you where your browser allows it. Then come back and mark it sent.</p>'+
     (kind==="vpReview"?attachBarHTML(d):'')+
     '<div class="actions"><button type="button" class="btn peach" data-marksent="'+kind+'">I\'ve sent it</button></div></div>';
@@ -1208,7 +1283,7 @@ async function reviewSubmit(e){
       log.push({at:now,by:S.uid,desk:"Admin review",action:"Overrode "+d.assessment.verdictLabel+" to "+VERDICT[choice].label,note:reason});
       await S.db.doc("sponsorships/"+s.id).update({status:"Ready for VP",review:{decision:"overridden",verdict:choice,by:S.uid,at:now},log,updatedAt:now});
     }
-    delete S.drafts[draftKey(s.id,"vpReview")];toast("Reviewed. Rampy is drafting the VP email.");
+    delete S.drafts[draftKey(s.id,"vpReview")];toast("Reviewed. Poppi is drafting the VP email.");
   }catch(err){toast(dbErr(err));}
 }
 async function reopenReview(){
@@ -1225,7 +1300,7 @@ async function finalSubmit(e){
   const vp={decision:{yes:"approve",partial:"partial",no:"decline"}[dec],reply:reply.slice(0,6000),support:dec!=="no"?support.slice(0,600):"",partialAmount:dec==="partial"?pamt:0,note:note.slice(0,800),at:now,by:S.uid};
   log.push({at:now,by:S.uid,desk:"CSR admin",action:"Final decision: "+{yes:"yes, approved",partial:"partial sponsorship",no:"no, declined"}[dec]+" (from the VP's email)",note:note||vp.support});
   try{await S.db.doc("sponsorships/"+s.id).update({status:{yes:"Approved",partial:"Partial",no:"Declined"}[dec],vp,decidedAt:now,log,updatedAt:now});["approval","partial","decline"].forEach(k=>delete S.drafts[draftKey(s.id,k)]);
-    toast("Final decision saved. Rampy is drafting the requester's email.");if(dec!=="no")confetti();}catch(err){toast(dbErr(err));}
+    toast("Final decision saved. Poppi is drafting the requester's email.");if(dec!=="no")confetti();}catch(err){toast(dbErr(err));}
 }
 
 /* ---------- drawer ---------- */
@@ -1248,7 +1323,7 @@ function stepPanel(s){
     if(!S.canEdit)return '<div class="panel step">'+head("Waiting for an admin to review","Scored by the hub","think")+'<p class="small muted">An admin checks the hub\'s recommendation and accepts or overrides it before it goes to the VP.</p></div>';
     const v0=d.assessment.verdict,ov=S.overrides[s.id];
     return '<div class="panel step">'+head("Review the hub's recommendation","Admin review",MOOD[effVerdict(s)])+
-    '<p class="small muted" style="margin-bottom:12px">The hub recommends <b>'+esc(VERDICT[v0].label)+'</b> with a score of '+(+d.assessment.sop).toFixed(2)+' out of 4.4. Check the reasons, attachments and Rampy\'s notes below, then accept it or override it.</p>'+
+    '<p class="small muted" style="margin-bottom:12px">The hub recommends <b>'+esc(VERDICT[v0].label)+'</b> with a score of '+(+d.assessment.sop).toFixed(2)+' out of 4.4. Check the reasons, attachments and Poppi\'s notes below, then accept it or override it.</p>'+
     '<form id="reviewForm"><div class="toglist" role="radiogroup" aria-label="Admin review">'+
       '<label class="tog"><input type="radio" name="rv" value="accept" id="rv-accept"'+(ov?'':' checked')+'><span>Accept: '+esc(VERDICT[v0].label)+'</span></label>'+
       ["proceed","deprioritise","decline"].filter(k=>k!==v0).map(k=>'<label class="tog'+(k==="decline"?' neg':'')+'"><input type="radio" name="rv" value="'+k+'" id="rv-'+k+'"'+(ov&&ov.verdict===k?' checked':'')+'><span>Override to '+VERDICT[k].label+'</span></label>').join("")+'</div>'+
@@ -1459,15 +1534,15 @@ function reportData(qi){return {R:buildReport(S.sponsorships,S.overrides,qi,S.co
 function summaryPanel(qi,R,P){
   const rep=S.reports[qi.key]||{},can=S.canEdit&&!S.readOnly&&!!S.db;
   let h='<div class="panel ainote" id="rpSummary"><div class="who">'+truck(S.rpWriting?"think":rep.summary?"happy":"idle",S.rpWriting?"bob":"")+'<div><div class="eyebrow">Executive summary</div><h3>'+esc(qi.label)+' at a glance</h3></div></div>';
-  if(S.rpWriting)return h+'<p class="muted">Rampy is writing the summary from this quarter\'s figures…</p><div><button type="button" class="btn sm" id="rpStop">Stop</button></div></div>';
+  if(S.rpWriting)return h+'<p class="muted">Poppi is writing the summary from this quarter\'s figures…</p><div><button type="button" class="btn sm" id="rpStop">Stop</button></div></div>';
   if(S.rpEdit&&can){const d=S.rpDraft||{};
     return h+'<div class="field"><label for="rp-sum">Summary</label><textarea id="rp-sum" style="min-height:200px">'+esc(d.summary!=null?d.summary:rep.summary||"")+'</textarea></div>'+
-      '<div class="field"><label for="rp-notes">Highlights from the CSR team</label><textarea id="rp-notes" placeholder="Impact stories, photos received, events attended, thank-you notes">'+esc(d.notes!=null?d.notes:rep.notes||"")+'</textarea><small>Rampy reads these when it writes the summary, and they appear in the downloaded report.</small></div>'+
-      '<div class="actions"><button type="button" class="btn primary" id="rpSave">Save</button>'+(S.sample?'<button type="button" class="btn" id="rpWrite">Write with Rampy</button>':'')+'<button type="button" class="link" id="rpCancel">Cancel</button></div></div>';}
-  h+=rep.summary?'<div class="summary">'+esc(rep.summary)+'</div>':'<p class="muted">No summary yet for this quarter.'+(can?(S.sample?' Rampy can write one from the figures below.':' Add one with Edit.'):' An admin can add one.')+'</p>';
+      '<div class="field"><label for="rp-notes">Highlights from the CSR team</label><textarea id="rp-notes" placeholder="Impact stories, photos received, events attended, thank-you notes">'+esc(d.notes!=null?d.notes:rep.notes||"")+'</textarea><small>Poppi reads these when it writes the summary, and they appear in the downloaded report.</small></div>'+
+      '<div class="actions"><button type="button" class="btn primary" id="rpSave">Save</button>'+(S.sample?'<button type="button" class="btn" id="rpWrite">Write with Poppi</button>':'')+'<button type="button" class="link" id="rpCancel">Cancel</button></div></div>';}
+  h+=rep.summary?'<div class="summary">'+esc(rep.summary)+'</div>':'<p class="muted">No summary yet for this quarter.'+(can?(S.sample?' Poppi can write one from the figures below.':' Add one with Edit.'):' An admin can add one.')+'</p>';
   if(rep.notes)h+='<div><b class="small">Highlights from the CSR team</b><div class="rpnote" style="margin-top:6px">'+esc(rep.notes)+'</div></div>';
   if(rep.updatedAt)h+='<p class="small muted">Last edited '+esc(fdate(rep.updatedAt))+' by <span data-uid="'+esc(rep.by||"")+'"></span></p>';
-  if(can)h+='<div class="actions">'+(S.sample?'<button type="button" class="btn primary" id="rpWrite">'+(rep.summary?'Rewrite with Rampy':'Write with Rampy')+'</button>':'')+'<button type="button" class="btn" id="rpEdit">Edit</button></div>';
+  if(can)h+='<div class="actions">'+(S.sample?'<button type="button" class="btn primary" id="rpWrite">'+(rep.summary?'Rewrite with Poppi':'Write with Poppi')+'</button>':'')+'<button type="button" class="btn" id="rpEdit">Edit</button></div>';
   return h+'</div>';
 }
 function renderReports(force){
@@ -1487,7 +1562,7 @@ async function writeSummary(){
   S.rpWriting=true;S.rpCtl=new AbortController();renderReports(true);
   try{const {text}=await S.sample(summaryPrompt(qi,R,P,notes),{signal:S.rpCtl.signal,modelTier:"default",cache:false});
     S.rpDraft={summary:text.trim().slice(0,6000),notes};S.rpEdit=true;toast("Summary drafted. Check it, then save.");}
-  catch(e){if(!(e&&e.code==="cancelled"))toast((e&&SAMPLE_ERR[e.code])||"Rampy couldn't write the summary. Try again.");}
+  catch(e){if(!(e&&e.code==="cancelled"))toast((e&&SAMPLE_ERR[e.code])||"Poppi couldn't write the summary. Try again.");}
   S.rpWriting=false;renderReports(true);
 }
 async function saveReportNotes(){
@@ -1662,7 +1737,7 @@ function renderSetup(){
 
 /* ---------- routing ---------- */
 const VIEWS=["dashboard","new","register","reports","setup"];
-function route(){
+function route(){setTimeout(()=>{if(bubbleDue&&!$("#v-dashboard").hidden)showBubble();},600);
   let v=(location.hash||"#dashboard").slice(1);if(!VIEWS.includes(v)||(v==="setup"&&!S.canEdit))v="dashboard";
   VIEWS.forEach(x=>$("#v-"+x).hidden=x!==v);
   document.querySelectorAll("nav.tabs a").forEach(a=>{if(a.dataset.v===v)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current");});
@@ -1673,6 +1748,7 @@ function renderAll(){
   const ae=document.activeElement;if(S.openId&&!(ae&&ae.closest&&ae.closest("#finalForm,#reviewForm,#composer")))renderDrawer(false);
   fillNames(document.querySelector("main"));
 }
+setInterval(()=>{if(!document.hidden)renderDashboard();},5*60*1000);
 let rT;function scheduleRender(){cancelAnimationFrame(rT);rT=requestAnimationFrame(()=>{renderAll();renderVerdict(false);});}
 
 /* ---------- events ---------- */
@@ -1701,10 +1777,10 @@ function addTwinkles(){
 }
 function bind(){
   initTheme();addTwinkles();buildForm();
-  const jig=(h,on)=>{if(on){if(h.dataset.jig)return;h.dataset.jig="1";h.innerHTML=truck("happy","alive jig");}else{if(!h.dataset.jig)return;delete h.dataset.jig;h.innerHTML=truck(h.dataset.mood||"idle","alive");}};
+  const jig=(h,on)=>{if(on){if(h.dataset.jig)return;h.dataset.jig="1";h.innerHTML=truck("happy","alive jig");}else{if(!h.dataset.jig)return;delete h.dataset.jig;h.innerHTML=truck(h.dataset.mood||"idle","alive "+(h.dataset.pace||""));}};
   document.addEventListener("mouseover",e=>{const h=e.target.closest&&e.target.closest(".hello-mascot");if(h)jig(h,true);});
   document.addEventListener("mouseout",e=>{const h=e.target.closest&&e.target.closest(".hello-mascot");if(h&&!h.contains(e.relatedTarget))jig(h,false);});
-  document.addEventListener("click",e=>{const h=e.target.closest&&e.target.closest(".hello-mascot");if(!h)return;jig(h,true);clearTimeout(h._t);h._t=setTimeout(()=>jig(h,false),1800);});$("#brandTruck").insertAdjacentHTML("afterbegin",truck("happy"));
+  document.addEventListener("click",e=>{const h=e.target.closest&&e.target.closest(".hello-mascot");if(!h)return;jig(h,true);if(h.closest("#hello"))showBubble(true);clearTimeout(h._t);h._t=setTimeout(()=>jig(h,false),1800);});$("#brandTruck").insertAdjacentHTML("afterbegin",truck("happy"));
   const f=$("#spForm"),drop=$("#drop"),fin=$("#fileIn");
   f.addEventListener("input",e=>{if(e.target.id!=="fileIn")scheduleVerdict();});f.addEventListener("change",e=>{if(e.target.id!=="fileIn")scheduleVerdict();});
   fin.addEventListener("change",()=>{addFiles([...fin.files]);fin.value="";});

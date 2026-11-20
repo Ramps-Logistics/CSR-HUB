@@ -7,7 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: one centred sign-in card on the hub's dotted, twinkling background. Rampy hops above the card; the Ramps logo footer sits at the page bottom. Same tokens as the Sponsorship Hub. */
+[hidden]{display:none!important}
+/* Layout: one centred sign-in card on the hub's dotted, twinkling background. Poppi hops above the card; the Ramps logo footer sits at the page bottom. Same tokens as the Sponsorship Hub. */
 :root{
   --bg:#F4F6FB; --dot:#DCE2F0; --surface:#FFFFFF; --sunk:#ECEFF7; --ink:#1F2843; --muted:#616B88; --line:#DEE3EF; --shadow:rgba(31,40,67,.18);
   --accent:#3D63DD; --accent-ink:#FFFFFF; --accent-soft:#E4EAFD;
@@ -65,6 +66,13 @@ button{font:inherit;color:inherit;cursor:var(--cur-hand)}
   .alive .rp-eyes{transform-box:fill-box;transform-origin:50% 50%;animation:rp-blink 4.6s ease-in-out infinite}
   .alive .rp-s1,.alive .rp-s2{transform-box:fill-box;transform-origin:50% 50%;animation:rp-spark 1.8s ease-in-out infinite}
   .alive .rp-s2{animation-delay:-.9s}
+  .alive.calm .rp-all,.alive.calm .rp-shadow{animation-duration:4.6s}
+  .alive.sleepy .rp-all{animation:rp-sway 5s ease-in-out infinite}
+  .alive.sleepy .rp-shadow,.alive.sleepy .rp-eyes{animation:none}
+  .alive .rp-z1,.alive .rp-z2{transform-box:fill-box;transform-origin:50% 50%;animation:rp-z 3.2s ease-in-out infinite}
+  .alive .rp-z2{animation-delay:-1.6s}
+  @keyframes rp-sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg) translateY(1px)}}
+  @keyframes rp-z{0%{transform:translate(0,4px) scale(.7);opacity:0}30%{opacity:1}100%{transform:translate(6px,-9px) scale(1.1);opacity:0}}
   @keyframes rp-hop{0%,58%,100%{transform:translateY(0) scale(1,1)}66%{transform:translateY(0) scale(1.06,.92)}76%{transform:translateY(-12px) scale(.96,1.05)}86%{transform:translateY(0) scale(1.08,.9)}93%{transform:translateY(0) scale(.98,1.03)}}
   @keyframes rp-shadow{0%,58%,100%{transform:scale(1);opacity:1}76%{transform:scale(.72);opacity:.55}86%{transform:scale(1.08);opacity:1}}
   @keyframes rp-blink{0%,44%,48%,100%{transform:scaleY(1)}46%{transform:scaleY(.1)}}
@@ -124,7 +132,7 @@ main.signin{position:relative;z-index:1;flex:1 0 auto;display:grid;place-items:c
 
 <main class="signin">
   <div class="card">
-    <div class="hello-mascot" id="mascot" data-mood="happy" title="Hi, I'm Rampy!"></div>
+    <div class="hello-mascot" id="mascot" data-mood="happy" title="Hi, I'm Poppi!"></div>
     <h1>Sponsorship Hub</h1>
     <p class="lede">Where every sponsorship request gets scored, reviewed and cheered on.</p>
     <button class="ms" id="msBtn" type="button">
@@ -149,24 +157,26 @@ main.signin{position:relative;z-index:1;flex:1 0 auto;display:grid;place-items:c
 <script>
 (function(){
 "use strict";
-/* Mascot: Rampy the Mochi box (Korean-inspired cute). Moods: happy, meh (sweat drop), sad (tear), think, idle.
+/* Mascot: Poppi the Mochi box (Korean-inspired cute). Moods: happy, meh (sweat drop), sad (tear), think, idle.
    Parts are grouped (rp-shadow, rp-all, rp-eyes, rp-spark) so the "alive" class can animate a hop, a blink and twinkling sparkles. */
 function truck(mood,extra){
   const cx=56,cy=74,e=11,my=cy+6,ink="var(--face)",ln='stroke="'+ink+'" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"';
   let eyes="",f="";
-  if(mood==="happy")eyes='<path d="M'+(cx-e-3.5)+' '+(cy+1)+' q3.5 -5 7 0 M'+(cx+e-3.5)+' '+(cy+1)+' q3.5 -5 7 0" stroke="'+ink+'" stroke-width="2.4" fill="none" stroke-linecap="round"/>';
+  if(mood==="sleepy")eyes='<path d="M'+(cx-e-3.5)+' '+(cy-1)+' q3.5 3.5 7 0 M'+(cx+e-3.5)+' '+(cy-1)+' q3.5 3.5 7 0" stroke="'+ink+'" stroke-width="2.4" fill="none" stroke-linecap="round"/>';
+  else if(mood==="happy")eyes='<path d="M'+(cx-e-3.5)+' '+(cy+1)+' q3.5 -5 7 0 M'+(cx+e-3.5)+' '+(cy+1)+' q3.5 -5 7 0" stroke="'+ink+'" stroke-width="2.4" fill="none" stroke-linecap="round"/>';
   else{const dy=mood==="think"?-2.5:0;
     eyes='<ellipse cx="'+(cx-e)+'" cy="'+(cy+dy)+'" rx="2.6" ry="3.2" fill="'+ink+'"/><ellipse cx="'+(cx+e)+'" cy="'+(cy+dy)+'" rx="2.6" ry="3.2" fill="'+ink+'"/>'+
        '<circle cx="'+(cx-e+.9)+'" cy="'+(cy+dy-1.2)+'" r="1" fill="#fff"/><circle cx="'+(cx+e+.9)+'" cy="'+(cy+dy-1.2)+'" r="1" fill="#fff"/>';}
   if(mood==="happy")f+='<path d="M'+(cx-5)+' '+my+' q2.5 3 5 0 q2.5 3 5 0" '+ln+'/>';
   else if(mood==="meh")f+='<path d="M'+(cx-3)+' '+(my+1)+' h6" '+ln+'/><path d="M'+(cx+e+9)+' '+(cy-9)+' q3 5 0 7 q-3 -2 0 -7z" fill="var(--tear)"/>';
   else if(mood==="sad")f+='<path d="M'+(cx-4)+' '+(my+3)+' q4 -4 8 0" '+ln+'/><path d="M'+(cx-e-1)+' '+(cy+4)+' q-2.5 5 0 7 q2.5 -2 0 -7z" fill="var(--tear)"/>';
+  else if(mood==="sleepy")f+='<ellipse cx="'+cx+'" cy="'+(my+1.5)+'" rx="2.2" ry="2.8" fill="'+ink+'" opacity=".85"/>';
   else if(mood==="think")f+='<circle cx="'+cx+'" cy="'+(my+1.5)+'" r="1.8" fill="'+ink+'"/>';
   else f+='<path d="M'+(cx-3)+' '+my+' q3 3 6 0" '+ln+'/>';
   f+='<ellipse cx="'+(cx-e-5)+'" cy="'+my+'" rx="5" ry="3" fill="var(--blush)" opacity=".9"/><ellipse cx="'+(cx+e+5)+'" cy="'+my+'" rx="5" ry="3" fill="var(--blush)" opacity=".9"/>';
   const heart='<path transform="translate(91 65) scale(.5)" d="M0 8 C-9 2 -9 -6 -4 -7 C-2 -7.5 0 -6 0 -4 C0 -6 2 -7.5 4 -7 C9 -6 9 2 0 8Z" fill="var(--heart)"/>';
   const ex=mood==="think"?'<circle cx="112" cy="24" r="2.5" fill="none" stroke="var(--muted)" stroke-width="1.6"/><circle cx="120" cy="13" r="4" fill="none" stroke="var(--muted)" stroke-width="1.6"/>':
-    mood==="happy"?'<path class="rp-s1" d="M18 14 l1.8 3.6 3.6 1.8 -3.6 1.8 -1.8 3.6 -1.8 -3.6 -3.6 -1.8 3.6 -1.8z" fill="var(--sparkle)"/><path class="rp-s2" d="M114 22 l1.2 2.4 2.4 1.2 -2.4 1.2 -1.2 2.4 -1.2 -2.4 -2.4 -1.2 2.4 -1.2z" fill="var(--blush)"/>':'';
+    mood==="sleepy"?'<path class="rp-z1" d="M103 30 h7 l-7 8 h7" stroke="var(--muted)" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path class="rp-z2" d="M114 13 h5 l-5 6 h5" stroke="var(--muted)" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>':mood==="happy"?'<path class="rp-s1" d="M18 14 l1.8 3.6 3.6 1.8 -3.6 1.8 -1.8 3.6 -1.8 -3.6 -3.6 -1.8 3.6 -1.8z" fill="var(--sparkle)"/><path class="rp-s2" d="M114 22 l1.2 2.4 2.4 1.2 -2.4 1.2 -1.2 2.4 -1.2 -2.4 -2.4 -1.2 2.4 -1.2z" fill="var(--blush)"/>':'';
   return '<svg viewBox="0 0 130 120" aria-hidden="true" class="'+(extra||"")+'"><ellipse class="rp-shadow" cx="65" cy="112" rx="38" ry="4" fill="var(--sunk)"/>'+
     '<g class="rp-all"><ellipse cx="48" cy="108" rx="9" ry="5" fill="var(--kraft2)" stroke="var(--kraft-line)" stroke-width="2.4"/><ellipse cx="82" cy="108" rx="9" ry="5" fill="var(--kraft2)" stroke="var(--kraft-line)" stroke-width="2.4"/>'+
     '<rect x="20" y="30" width="90" height="76" rx="28" fill="var(--kraft)" stroke="var(--kraft-line)" stroke-width="2.6"/>'+
@@ -202,8 +212,9 @@ function addTwinkles(){
 
 const $=s=>document.querySelector(s);
 initTheme();addTwinkles();
-const m=$("#mascot");m.innerHTML=truck("happy","alive");
-const jig=on=>{if(on){if(m.dataset.jig)return;m.dataset.jig="1";m.innerHTML=truck("happy","alive jig");}else{if(!m.dataset.jig)return;delete m.dataset.jig;m.innerHTML=truck(m.dataset.mood,"alive");}};
+const hr=new Date().getHours(),night=hr>=21||hr<5,pace=night?"sleepy":hr>=17?"calm":"";
+const m=$("#mascot");m.dataset.mood=night?"sleepy":"happy";m.dataset.pace=pace;m.innerHTML=truck(m.dataset.mood,"alive "+pace);
+const jig=on=>{if(on){if(m.dataset.jig)return;m.dataset.jig="1";m.innerHTML=truck("happy","alive jig");}else{if(!m.dataset.jig)return;delete m.dataset.jig;m.innerHTML=truck(m.dataset.mood,"alive "+m.dataset.pace);}};
 m.addEventListener("mouseenter",()=>jig(true));m.addEventListener("mouseleave",()=>jig(false));
 m.addEventListener("click",()=>{jig(true);clearTimeout(m._t);m._t=setTimeout(()=>jig(false),1800);});
 /* Microsoft sign-in through Supabase (Azure provider, Ramps tenant only). */
