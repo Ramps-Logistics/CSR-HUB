@@ -93,6 +93,14 @@ main.signin{position:relative;z-index:1;flex:1 0 auto;display:grid;place-items:c
 .ms[aria-busy="true"]{opacity:.7;pointer-events:none}
 .ms svg{width:21px;height:21px;flex:none}
 .hint{font-size:.84rem;color:var(--muted);max-width:34ch}
+.mail{width:100%;display:grid;gap:8px;margin-top:2px}
+.mail[hidden]{display:none}
+.mail .or{display:flex;align-items:center;gap:10px;font-size:.8rem;color:var(--muted);font-weight:700}
+.mail .or::before,.mail .or::after{content:"";flex:1;height:1px;background:var(--line)}
+.mail form{display:flex;gap:8px}
+.mail input{flex:1;min-width:0;height:42px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;font-size:.92rem;padding:0 12px}
+.mail button{height:42px;border-radius:10px;border:0;background:var(--accent);color:#fff;font-weight:800;padding:0 14px;white-space:nowrap}
+.mail button[aria-busy="true"]{opacity:.7;pointer-events:none}
 .status{width:100%;border-radius:14px;padding:10px 12px;font-size:.86rem;background:var(--peach-soft);color:var(--ink);text-align:left}
 .help{position:relative;z-index:1;color:var(--muted)}
 .site-foot{position:relative;z-index:1;margin-top:auto;padding-block:8px calc(32px + env(safe-area-inset-bottom,0px));display:grid;justify-items:center;gap:10px;text-align:center}
@@ -123,6 +131,14 @@ main.signin{position:relative;z-index:1;flex:1 0 auto;display:grid;place-items:c
       <svg viewBox="0 0 21 21" aria-hidden="true"><rect x="1" y="1" width="9" height="9" fill="#F25022"/><rect x="11" y="1" width="9" height="9" fill="#7FBA00"/><rect x="1" y="11" width="9" height="9" fill="#00A4EF"/><rect x="11" y="11" width="9" height="9" fill="#FFB900"/></svg>
       <span id="msLabel">Sign in with Microsoft</span>
     </button>
+    <div class="mail" id="mail" hidden>
+      <div class="or">or, for now</div>
+      <form id="mailForm" novalidate>
+        <label class="sr" for="mailInput" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Work email</label>
+        <input id="mailInput" type="email" autocomplete="email" placeholder="Work email" required>
+        <button id="mailBtn" type="submit">Email me a link</button>
+      </form>
+    </div>
     <div class="status" id="status" role="status" hidden></div>
   </div>
   <p class="help small">Trouble signing in? Contact the communications team.</p>
@@ -201,6 +217,23 @@ const q=new URLSearchParams(location.search+"&"+location.hash.slice(1));
 if(q.get("error_description"))say("Microsoft didn't let that account in. Use your Ramps work account, or contact the communications team.");
 if(!sb)say("Sign-in isn't set up yet. Add the Supabase details to config.js.");
 else sb.auth.getSession().then(({data})=>{if(data&&data.session)location.replace(hub);});
+/* Temporary: email sign-in link, only for people already added in Supabase (Authentication > Users).
+   Switch off by setting emailSignIn: false in config.js. */
+if(sb&&CFG.emailSignIn){
+  $("#mail").hidden=false;
+  $("#mailForm").addEventListener("submit",async e=>{
+    e.preventDefault();
+    const em=$("#mailInput").value.trim(),mb=$("#mailBtn");
+    if(!/^[^@s]+@[^@s]+.[^@s]+$/.test(em)){say("Enter your full work email.");return;}
+    mb.setAttribute("aria-busy","true");mb.textContent="Sending…";
+    const {error}=await sb.auth.signInWithOtp({email:em,options:{shouldCreateUser:false,emailRedirectTo:hub}});
+    mb.removeAttribute("aria-busy");mb.textContent="Email me a link";
+    if(error&&/signups not allowed|not found|otp_disabled/i.test(error.message||""))say("That email isn't set up for the hub yet. Ask a CSR admin to add you.");
+    else if(error&&/rate|seconds/i.test(error.message||""))say("Too many links sent. Wait a minute and try again.");
+    else if(error)say("Couldn't send the link. Try again in a moment.");
+    else say("Check your inbox for a sign-in link from Supabase. It opens the hub.");
+  });
+}
 btn.addEventListener("click",async()=>{
   if(!sb)return;
   btn.setAttribute("aria-busy","true");$("#msLabel").textContent="Opening Microsoft sign-in…";

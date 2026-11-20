@@ -4,5 +4,8 @@
    Never put the service_role key or the Anthropic API key here. */
 window.HUB_CONFIG = {
   supabaseUrl: "https://orumvvnkufvijxcfujcb.supabase.co",
-  supabaseAnonKey: "sb_publishable_G0-M0A7kJkey2dLzynA9DA_TPUHoTHd"
+  supabaseAnonKey: "sb_publishable_G0-M0A7kJkey2dLzynA9DA_TPUHoTHd",
+  // Temporary email sign-in link while Microsoft sign-in is being set up.
+  // Change to false once "Sign in with Microsoft" works.
+  emailSignIn: true
 };
