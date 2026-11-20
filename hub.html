@@ -373,6 +373,9 @@ dl.facts dt{color:var(--muted)}dl.facts dd{margin:0;min-width:0;overflow-wrap:an
 .site-foot p{font-size:.86rem;font-weight:700;color:var(--muted);text-wrap:balance}
 @media (max-width:640px){.wb{grid-template-columns:1fr auto}.wb .ref{grid-column:1/3}.wb .sub{grid-column:1/3}.composer .meta{grid-template-columns:1fr}}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="supabase-runtime.js"></script>
 </head>
 <body>
 
@@ -827,7 +830,7 @@ function kb(n){return n>1048576?(n/1048576).toFixed(1)+" MB":Math.max(1,Math.rou
 function toast(msg){const h=$("#toastHost");h.innerHTML='<div class="toast" role="status">'+esc(msg)+'</div>';clearTimeout(toast.t);toast.t=setTimeout(()=>h.innerHTML="",3600);}
 function mergeCfg(c){const o=clone(DEFAULT_CONFIG);if(c&&+c.fyStartMonth>=1&&+c.fyStartMonth<=12)o.fyStartMonth=+c.fyStartMonth;if(c&&c.contacts&&typeof c.contacts==="object")for(const k in o.contacts)if(typeof c.contacts[k]==="string")o.contacts[k]=c.contacts[k];return o;}
 function status(msg){const el=$("#status");el.hidden=!msg;el.textContent=msg||"";}
-function dbErr(e){const c=e&&e.code;if(c==="quota_exceeded")return"Storage is full. Ask an admin to clear old records.";if(c==="invalid_argument")return"You don't have permission to save this. Ask the page owner for access.";return"Couldn't save. Check your connection and try again.";}
+function dbErr(e){const c=e&&e.code;if(c==="quota_exceeded")return"Storage is full. Ask an admin to clear old records.";if(c==="invalid_argument")return"You don't have permission to save this. Ask a CSR admin for access.";return"Couldn't save. Check your connection and try again.";}
 async function fillNames(root){
   const els=[...(root||document).querySelectorAll("[data-uid]")].filter(e=>e.dataset.uid);if(!els.length)return;
   const ids=[...new Set(els.map(e=>e.dataset.uid))];let ps={};try{ps=S.user?await S.user.profiles(ids):{};}catch(e){}
@@ -1785,15 +1788,15 @@ function bind(){
 async function boot(){
   bind();route();renderVerdict(false);renderFiles();
   const wc=window.claude;
-  if(!wc||!wc.use){status("Saved data isn't available here. Open this page on claude.ai to log and review requests.");S.readOnly=true;$("#aiAvail").textContent="Reading files needs claude.ai.";renderAll();renderVerdict(false);return;}
+  if(!wc||!wc.use){status("The hub can't reach its database. Check config.js, or sign in again.");S.readOnly=true;$("#aiAvail").textContent="Reading files needs the database connection.";renderAll();renderVerdict(false);return;}
   const [db,user,dl,sample,assets]=await Promise.all([wc.use("db"),wc.use("user"),wc.use("downloads"),wc.use("sample"),wc.use("assets")]);
   S.db=db;S.user=user;S.dl=dl;S.sample=sample;S.assets=assets;
   $("#aiAvail").textContent=sample?(assets?"":"Originals are kept only when an admin logs the request."):"Reading files isn't available in this view. Fill in the form by hand.";
   renderFiles();
   if(user){S.uid=await user.id();S.canEdit=await user.canEdit();const cw=await user.can("data.write");if(cw===false)S.readOnly=true;}
   $("#setupTab").hidden=!S.canEdit;
-  if(!db){status("Saved data isn't available in this view. Sign in on claude.ai to take part.");S.readOnly=true;route();renderVerdict(false);return;}
-  if(S.readOnly)status("You have view-only access, so you can read everything but not log requests or emails. Ask the page owner for Contributor access.");
+  if(!db){status("You're signed out. Sign in again to take part.");S.readOnly=true;route();renderVerdict(false);return;}
+  if(S.readOnly)status("You have view-only access, so you can read everything but not log requests or emails. Ask a CSR admin for contributor access.");
   const timer=setTimeout(()=>{if(!Object.values(S.got).every(Boolean))status("Can't reach the saved data yet. What you see may be incomplete; it will update when the connection returns.");},10000);
   const done=(k,snap)=>{if(!snap.metadata||!snap.metadata.fromCache)S.got[k]=true;if(Object.values(S.got).every(Boolean)){clearTimeout(timer);if(!S.readOnly)status("");}scheduleRender();};
   const fail=k=>e=>{S.got[k]=true;if(e&&e.code!=="revoked")status("Some data couldn't load. Reload the page to try again.");scheduleRender();};
