@@ -30,7 +30,19 @@
   const ready = (async () => {
     const { data } = await sb.auth.getSession();
     const session = data && data.session;
-    if (!session) { location.replace(SIGN_IN_PAGE); throw err("signed_out"); }
+    // Someone opening a link (such as the VP's decision link) while signed out comes back to it after signing in.
+    const RETURN_KEY = "hub-return";
+    if (!session) {
+      try { if (/^#[A-Za-z0-9/_-]+$/.test(location.hash)) localStorage.setItem(RETURN_KEY, JSON.stringify({ h: location.hash, t: Date.now() })); } catch (e) { /* storage blocked: they land on the dashboard */ }
+      location.replace(SIGN_IN_PAGE); throw err("signed_out");
+    }
+    try {
+      const saved = JSON.parse(localStorage.getItem(RETURN_KEY) || "null");
+      localStorage.removeItem(RETURN_KEY);
+      const here = location.hash;
+      if (saved && /^#[A-Za-z0-9/_-]+$/.test(saved.h) && Date.now() - saved.t < 60 * 60 * 1000 && (!here || here === "#" || /access_token|type=/.test(here)))
+        setTimeout(() => { location.hash = saved.h; }, 0);
+    } catch (e) { /* storage blocked or bad value: ignore */ }
     const { data: me } = await sb.from("members").select("user_id,email,name,role").eq("user_id", session.user.id).maybeSingle();
     return { session, me: me || null };
   })();
@@ -190,7 +202,7 @@
       res = await realFetch(CFG.supabaseUrl + "/functions/v1/claude", {
         method: "POST", signal: opts.signal,
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: CFG.supabaseAnonKey },
-        body: JSON.stringify({ prompt: String(prompt), images, json: !!wantJson, tier: opts.modelTier === "quick" ? "quick" : "default", research: !!opts.research })
+        body: JSON.stringify({ prompt: String(prompt), images, json: !!wantJson, tier: opts.modelTier === "quick" ? "quick" : "default" })
       });
     } catch (e) { if (e && e.name === "AbortError") throw err("cancelled"); throw err("network", e && e.message); }
     const out = await res.json().catch(() => ({}));
