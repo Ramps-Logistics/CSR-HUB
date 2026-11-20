@@ -224,7 +224,7 @@ if(sb&&CFG.emailSignIn){
   $("#mailForm").addEventListener("submit",async e=>{
     e.preventDefault();
     const em=$("#mailInput").value.trim(),mb=$("#mailBtn");
-    if(!/^[^@s]+@[^@s]+.[^@s]+$/.test(em)){say("Enter your full work email.");return;}
+    const at=em.indexOf("@");if(at<1||em.indexOf(".",at)<at+2||em.endsWith(".")||/\s/.test(em)){say("Enter your full work email.");return;}
     mb.setAttribute("aria-busy","true");mb.textContent="Sending…";
     const {error}=await sb.auth.signInWithOtp({email:em,options:{shouldCreateUser:false,emailRedirectTo:hub}});
     mb.removeAttribute("aria-busy");mb.textContent="Email me a link";
