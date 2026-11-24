@@ -333,7 +333,7 @@ app.post("/api/claude", async (req, res) => {
       body: JSON.stringify({
         model: CLAUDE_MODEL,
         max_tokens: 4096,
-        temperature: 0.1,
+        output_config: { effort: "low" },
         messages: [{ role: "user", content }],
       }),
     });
