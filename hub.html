@@ -365,6 +365,11 @@ dl.facts dt{color:var(--muted)}dl.facts dd{margin:0;min-width:0;overflow-wrap:an
 .composer .meta{display:grid;grid-template-columns:70px 1fr;gap:8px 10px;align-items:center;font-size:.86rem}
 .composer .meta label{font-weight:700;color:var(--muted)}
 .composer textarea.body{min-height:280px;font-size:.92rem;line-height:1.55}
+.composer .modebar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.composer .seg{display:inline-flex;background:var(--sunk);padding:3px;border-radius:999px;gap:2px}
+.composer .seg button{border:0;background:transparent;color:var(--muted);font-family:var(--f-display);font-weight:600;font-size:.82rem;padding:5px 12px;border-radius:999px}
+.composer .seg button[aria-pressed="true"]{background:var(--surface);color:var(--accent);box-shadow:0 2px 6px -2px var(--shadow)}
+.email-preview{background:#F4F6FB;border:1px solid var(--line);border-radius:var(--r-sm);padding:14px;overflow-x:auto}
 .composer .writing{display:flex;gap:10px;align-items:center;background:var(--peach-soft);border-radius:var(--r-sm);padding:8px 12px;font-size:.86rem}
 .composer .writing svg{width:44px}
 .attachbar{display:grid;gap:8px;background:var(--accent-soft);border-radius:var(--r-sm);padding:12px 14px}
@@ -868,13 +873,120 @@ function emailPrompt(kind,d,ctx,draft){
     (vp.reply?"\nVP's reply (internal, do not quote to the applicant): "+vp.reply:"")+(vp.note?"\nInternal note: "+vp.note:"")+
     "\n\nStarting draft:\nSubject: "+draft.subject+"\n\n"+draft.body+"\n\nReply with only this JSON object: {\"subject\":\"...\",\"body\":\"...\"}";
 }
+function renderEmailHTML(kind,dr,s,cfg){
+  const d=(s&&s.data)||{},ref=d.ref||"",body=String((dr&&dr.body)||"").replace(/\r\n/g,"\n").trim();
+  const badgeMap={
+    vpReview:{label:"For VP Decision",bg:"#E4EAFD",fg:"#3D63DD"},
+    approval:{label:"Approved",bg:"#DBF3E7",fg:"#22A06B"},
+    partial:{label:"Partial Sponsorship",bg:"#FCF1D6",fg:"#C98A12"},
+    decline:{label:"Request Update",bg:"#ECEFF7",fg:"#616B88"},
+    referral:{label:"Alternative Support",bg:"#FFE9DF",fg:"#E2632A"},
+    moreInfo:{label:"More Info Needed",bg:"#FCF1D6",fg:"#C98A12"}
+  };
+  const badge=badgeMap[kind]||badgeMap.vpReview;
+  const fBody="'Nunito','Segoe UI',Arial,sans-serif",fDisp="'Fredoka','Trebuchet MS','Segoe UI',Arial,sans-serif",fMono="'DM Mono',Consolas,monospace";
+  const blocks=body.split(/\n{2,}/).map(b=>b.trim()).filter(Boolean);
+  const vpFieldKeys=["Request:","From:","Came in through:","Date of event:","Asking for:"];
+  const linkUrl=(kind==="vpReview"&&s&&s.id)?decideLink(s.id):"";
+  let signoffHtml="",contentHtml="",ctaRendered=false;
+  for(let i=0;i<blocks.length;i++){
+    const blk=blocks[i],lines=blk.split("\n").map(l=>l.trim()).filter(Boolean);
+    if(!lines.length)continue;
+    if(i===blocks.length-1&&/^Kind regards,?/i.test(lines[0])){
+      signoffHtml='<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;border-top:1px solid #DEE3EF"><tr><td style="padding-top:16px;font-family:'+fBody+';font-size:14px;line-height:1.6;color:#1F2843">'+
+        '<div style="color:#616B88;font-size:13px;margin-bottom:4px">'+esc(lines[0])+'</div>'+
+        lines.slice(1).map((l,idx)=>'<div style="'+(idx===0?'font-weight:700;color:#1F2843':'color:#616B88;font-size:13px')+'">'+esc(l)+'</div>').join("")+
+        '</td></tr></table>';
+      continue;
+    }
+    if(kind==="vpReview"&&lines.some(l=>vpFieldKeys.some(k=>l.startsWith(k)))){
+      const rows=[],extra=[];
+      for(const l of lines){
+        const k=vpFieldKeys.find(x=>l.startsWith(x));
+        if(k){rows.push([k.slice(0,-1),l.slice(k.length).trim()]);}
+        else extra.push(l);
+      }
+      contentHtml+='<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:14px 0;background-color:#F4F6FB;border:1px solid #DEE3EF;border-radius:12px"><tr><td style="padding:14px 16px">'+
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">'+
+        rows.map(([k,v],idx)=>'<tr><td style="padding:4px 10px 4px 0;font-family:'+fBody+';font-size:13px;font-weight:700;color:#616B88;vertical-align:top;width:130px;white-space:nowrap'+(idx<rows.length-1?';border-bottom:1px solid #E6EBF5':'')+'">'+esc(k)+'</td>'+
+          '<td style="padding:4px 0;font-family:'+fBody+';font-size:14px;font-weight:600;color:#1F2843;vertical-align:top'+(idx<rows.length-1?';border-bottom:1px solid #E6EBF5':'')+'">'+esc(v)+'</td></tr>').join("")+
+        '</table>';
+      if(extra.length){
+        const bul=extra.filter(x=>/^[-•]\s*/.test(x)),hdr=extra.filter(x=>!/^[-•]\s*/.test(x));
+        if(hdr.length)contentHtml+='<div style="margin-top:10px;padding-top:10px;border-top:1px solid #DEE3EF;font-family:'+fBody+';font-size:13px;font-weight:700;color:#616B88">'+hdr.map(esc).join("<br>")+'</div>';
+        if(bul.length)contentHtml+='<ul style="margin:6px 0 0 18px;padding:0;font-family:'+fBody+';font-size:14px;line-height:1.55;color:#1F2843">'+bul.map(x=>'<li style="margin:3px 0">'+esc(x.replace(/^[-•]\s*/,""))+'</li>').join("")+'</ul>';
+      }
+      contentHtml+='</td></tr></table>';
+      continue;
+    }
+    if(kind==="vpReview"&&lines.some(l=>/^https?:\/\/\S+/.test(l))){
+      const urlLine=lines.find(l=>/^https?:\/\/\S+/.test(l))||linkUrl;
+      const introLines=lines.filter(l=>!/^https?:\/\/\S+/.test(l));
+      if(introLines.length)contentHtml+='<p style="margin:12px 0 10px;font-family:'+fBody+';font-size:15px;line-height:1.6;color:#1F2843">'+introLines.map(esc).join("<br>")+'</p>';
+      contentHtml+='<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:12px 0 14px"><tr><td align="left">'+
+        '<a href="'+esc(urlLine)+'" target="_blank" rel="noopener" style="display:inline-block;background-color:#3D63DD;color:#FFFFFF;font-family:'+fDisp+';font-size:15px;font-weight:600;text-decoration:none;padding:12px 22px;border-radius:12px">Review &amp; Decide in Sponsorship Hub &rarr;</a>'+
+        '<div style="margin-top:8px;font-family:'+fBody+';font-size:12px;color:#616B88">Or open: <a href="'+esc(urlLine)+'" style="color:#3D63DD;word-break:break-all">'+esc(urlLine)+'</a></div>'+
+        '</td></tr></table>';
+      ctaRendered=true;
+      continue;
+    }
+    if(kind==="vpReview"&&/^Poppi's alternative:/i.test(lines[0])){
+      contentHtml+='<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:12px 0;background-color:#FFE9DF;border-left:4px solid #FF8A5B;border-radius:10px"><tr><td style="padding:12px 14px;font-family:'+fBody+';font-size:14px;line-height:1.55;color:#1F2843">'+lines.map(esc).join("<br>")+'</td></tr></table>';
+      continue;
+    }
+    if(kind==="vpReview"&&(/above TTD 20,000|CEO review/i.test(blk))){
+      contentHtml+='<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:12px 0;background-color:#FCF1D6;border-left:4px solid #C98A12;border-radius:10px"><tr><td style="padding:12px 14px;font-family:'+fBody+';font-size:14px;line-height:1.55;color:#7A5208;font-weight:600">'+lines.map(esc).join("<br>")+'</td></tr></table>';
+      continue;
+    }
+    if(/^(What Ramps (?:will|can) provide:)/i.test(lines[0])){
+      const isPartial=kind==="partial";
+      contentHtml+='<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:14px 0;background-color:'+(isPartial?"#E4EAFD":"#DBF3E7")+';border-left:4px solid '+(isPartial?"#3D63DD":"#22A06B")+';border-radius:10px"><tr><td style="padding:12px 16px;font-family:'+fBody+';font-size:14px;line-height:1.55;color:#1F2843">'+
+        lines.map(l=>{const idx=l.indexOf(":");return idx>0?'<strong style="color:'+(isPartial?"#2947A8":"#177A50")+'">'+esc(l.slice(0,idx+1))+'</strong>'+esc(l.slice(idx+1)):esc(l);}).join("<br>")+
+        '</td></tr></table>';
+      continue;
+    }
+    const hasBullets=lines.some(l=>/^[-•]\s+/.test(l));
+    if(hasBullets){
+      const lead=[],bul=[];
+      for(const l of lines){if(/^[-•]\s+/.test(l))bul.push(l.replace(/^[-•]\s+/,""));else if(!bul.length)lead.push(l);else bul[bul.length-1]+=" "+l;}
+      if(lead.length)contentHtml+='<p style="margin:12px 0 6px;font-family:'+fBody+';font-size:15px;line-height:1.6;color:#1F2843">'+lead.map(esc).join("<br>")+'</p>';
+      if(bul.length){
+        const boxBg=kind==="moreInfo"?"#FCF1D6":"#F4F6FB",boxBorder=kind==="moreInfo"?"#F1C25B":"#DEE3EF";
+        contentHtml+='<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 12px;background-color:'+boxBg+';border:1px solid '+boxBorder+';border-radius:10px"><tr><td style="padding:10px 16px">'+
+          '<ul style="margin:0 0 0 18px;padding:0;font-family:'+fBody+';font-size:14px;line-height:1.6;color:#1F2843">'+
+          bul.map(x=>'<li style="margin:4px 0">'+esc(x)+'</li>').join("")+'</ul></td></tr></table>';
+      }
+      continue;
+    }
+    contentHtml+='<p style="margin:0 0 12px;font-family:'+fBody+';font-size:15px;line-height:1.6;color:#1F2843">'+lines.map(esc).join("<br>")+'</p>';
+  }
+  if(kind==="vpReview"&&!ctaRendered&&linkUrl){
+    contentHtml+='<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:14px 0"><tr><td align="left">'+
+      '<a href="'+esc(linkUrl)+'" target="_blank" rel="noopener" style="display:inline-block;background-color:#3D63DD;color:#FFFFFF;font-family:'+fDisp+';font-size:15px;font-weight:600;text-decoration:none;padding:12px 22px;border-radius:12px">Review &amp; Decide in Sponsorship Hub &rarr;</a>'+
+      '</td></tr></table>';
+  }
+  return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F4F6FB;padding:20px 12px;font-family:'+fBody+'"><tr><td align="center">'+
+    '<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:#FFFFFF;border:1px solid #DEE3EF;border-radius:18px;overflow:hidden">'+
+    '<tr><td style="height:6px;background:linear-gradient(90deg,#3D63DD 0%,#5B7BE8 65%,#FF8A5B 100%);background-color:#3D63DD;font-size:0;line-height:0">&nbsp;</td></tr>'+
+    '<tr><td style="padding:18px 24px 14px;border-bottom:1px solid #DEE3EF">'+
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>'+
+        '<td style="vertical-align:middle"><div style="font-family:'+fDisp+';font-size:18px;font-weight:700;color:#1F2843;line-height:1.15">Ramps Logistics</div><div style="font-family:'+fBody+';font-size:12px;font-weight:700;color:#616B88;margin-top:2px">CSR &amp; Sponsorship Hub</div></td>'+
+        '<td align="right" style="vertical-align:middle">'+(ref?'<span style="display:inline-block;font-family:'+fMono+';font-size:11px;font-weight:500;color:#3D63DD;background-color:#E4EAFD;padding:4px 10px;border-radius:999px;margin-right:6px">'+esc(ref)+'</span>':'')+
+          '<span style="display:inline-block;font-family:'+fDisp+';font-size:12px;font-weight:600;color:'+badge.fg+';background-color:'+badge.bg+';padding:4px 10px;border-radius:999px">'+esc(badge.label)+'</span></td>'+
+      '</tr></table>'+
+    '</td></tr>'+
+    '<tr><td style="padding:22px 24px 18px">'+contentHtml+signoffHtml+'</td></tr>'+
+    '<tr><td style="padding:12px 24px;background-color:#ECEFF7;border-top:1px solid #DEE3EF;font-family:'+fBody+';font-size:12px;color:#616B88;text-align:center">Ramps Logistics &middot; Corporate Social Responsibility</td></tr>'+
+    '</table>'+
+  '</td></tr></table>';
+}
 function ansFromCrit(crit,audience){
   const A={sdgs:[],ba:[],branding:[],restrict:[],audience:AUDIENCE.some(x=>x[0]===audience)?audience:"none"};
   SOP.forEach(p=>{A[p.key]=[];if(p.x)A[p.key+"X"]=false;});
   Object.keys(crit||{}).forEach(key=>{if(!KEYSET.has(key))return;const [g,k]=key.split(".");if(k==="X")A[g+"X"]=true;else if(Array.isArray(A[g]))A[g].push(k);});
   return A;
 }
-window.__ramps={askingText,altText,sourceLabel,FIT,assess,DEFAULT_CONFIG,parseAI,buildPrompt,KEYSET,templateEmail,emailPrompt,emailFrom,ansFromCrit};
+window.__ramps={askingText,altText,sourceLabel,FIT,assess,DEFAULT_CONFIG,parseAI,buildPrompt,KEYSET,templateEmail,emailPrompt,renderEmailHTML,emailFrom,ansFromCrit};
 
 /* ---------- mascot ---------- */
 /* Mascot: Poppi the Mochi box (Korean-inspired cute). Moods: happy, meh (sweat drop), sad (tear), think, idle.
@@ -1279,7 +1391,7 @@ function draftKey(id,kind){return id+":"+kind;}
 function ensureDraft(s,kind){
   const k=draftKey(s.id,kind);if(S.drafts[k])return S.drafts[k];
   const t=templateEmail(kind,s.data,ctxFor(s),S.config),r=recipientFor(kind,s.data);
-  S.drafts[k]={to:r.to,cc:r.cc,subject:t.subject,body:t.body,polished:false};
+  S.drafts[k]={to:r.to,cc:r.cc,subject:t.subject,body:t.body,polished:false,mode:"preview"};
   if(S.sample&&!S.readOnly&&kind!=="vpReview")setTimeout(()=>polishDraft(s,kind),0);
   return S.drafts[k];
 }
@@ -1296,19 +1408,23 @@ async function polishDraft(s,kind){
   S.writing[k]=false;renderDrawer(false,true);
 }
 function composerHTML(s,kind,intro){
-  const d=s.data,k=draftKey(s.id,kind),dr=ensureDraft(s,kind),w=!!S.writing[k];
+  const d=s.data,k=draftKey(s.id,kind),dr=ensureDraft(s,kind),w=!!S.writing[k],edit=dr.mode==="edit";
   const noTo=!dr.to;
   return '<div class="composer" id="composer" data-kind="'+kind+'">'+(intro?'<p class="small muted">'+intro+'</p>':'')+
     (w?'<div class="writing">'+truck("think","bob")+'<span>Poppi is writing this email. You can edit it once it lands.</span><button type="button" class="btn sm" data-stopwrite="'+kind+'">Use standard wording</button></div>':'')+
     '<div class="meta"><label for="em-to">To</label><input type="email" id="em-to" value="'+esc(dr.to)+'" placeholder="'+(kind==="vpReview"?"Add the VP's email in Setup":"applicant@organisation.org")+'">'+
     '<label for="em-cc">Cc</label><input type="text" id="em-cc" value="'+esc(dr.cc)+'">'+
     '<label for="em-subj">Subject</label><input type="text" id="em-subj" value="'+esc(dr.subject)+'"></div>'+
-    '<textarea class="body" id="em-body" aria-label="Email body"'+(w?' readonly':'')+'>'+esc(dr.body)+'</textarea>'+
+    '<div class="modebar"><div class="seg" role="group" aria-label="Email view">'+
+      '<button type="button" data-emmode="preview" aria-pressed="'+(!edit)+'">Formatted preview</button>'+
+      '<button type="button" data-emmode="edit" aria-pressed="'+(edit)+'">Edit text</button>'+
+    '</div>'+(S.sample&&!w&&kind!=="vpReview"?'<button type="button" class="link small" data-rewrite="'+kind+'">Rewrite with Poppi</button>':'')+'</div>'+
+    '<div class="email-preview" id="em-preview"'+(edit?' hidden':'')+'>'+renderEmailHTML(kind,dr,s,S.config)+'</div>'+
+    '<textarea class="body" id="em-body" aria-label="Email body"'+(edit?'':' hidden')+(w?' readonly':'')+'>'+esc(dr.body)+'</textarea>'+
     (noTo?'<p class="small" style="color:var(--warn);font-weight:700">'+(kind==="vpReview"?"No VP email yet. Add it in Setup, or type it above.":"No email address on the request. Type the applicant's address above.")+'</p>':'')+
-    '<div class="actions"><button type="button" class="btn primary" data-copy="all">Copy email</button><button type="button" class="btn sm" data-copy="subject">Copy subject</button><button type="button" class="btn sm" data-copy="body">Copy body</button>'+
-    '<a class="btn sm" id="mailtoBtn" href="'+esc(mailtoHref(dr))+'">Open in Outlook</a>'+
-    (S.sample&&!w&&kind!=="vpReview"?'<button type="button" class="link small" data-rewrite="'+kind+'">Rewrite with Poppi</button>':'')+'</div>'+
-    '<p class="small muted">Paste it into a new Outlook email and send it. "Open in Outlook" starts the email for you where your browser allows it. Then come back and mark it sent.</p>'+
+    '<div class="actions"><button type="button" class="btn primary" data-copy="html">Copy formatted email</button><button type="button" class="btn sm" data-copy="subject">Copy subject</button><button type="button" class="btn sm" data-copy="body">Copy plain text</button>'+
+    '<a class="btn sm" id="mailtoBtn" href="'+esc(mailtoHref(dr))+'">Open in Outlook (plain text)</a></div>'+
+    '<p class="small muted">Click <b>Copy formatted email</b> and paste into Outlook to keep the Ramps Hub card styling and clickable links. &ldquo;Open in Outlook&rdquo; starts a plain-text draft only. Then come back and mark it sent.</p>'+
     (kind==="vpReview"?attachBarHTML(d):'')+
     '<div class="actions"><button type="button" class="btn peach" data-marksent="'+kind+'">I\'ve sent it</button></div></div>';
 }
@@ -1338,14 +1454,30 @@ async function dlZip(){
 }
 function mailtoHref(dr){let b=dr.body;if(b.length>1600)b=b.slice(0,1600)+"\n\n[Paste the rest from the hub]";
   return "mailto:"+encodeURIComponent(dr.to||"").replace(/%40/g,"@").replace(/%2C/g,",")+"?"+(dr.cc?"cc="+encodeURIComponent(dr.cc)+"&":"")+"subject="+encodeURIComponent(dr.subject)+"&body="+encodeURIComponent(b);}
-function syncDraft(){const c=$("#composer");if(!c||!S.openId)return;const k=draftKey(S.openId,c.dataset.kind),dr=S.drafts[k];if(!dr)return;
-  dr.to=$("#em-to").value.trim();dr.cc=$("#em-cc").value.trim();dr.subject=$("#em-subj").value;if(!$("#em-body").readOnly)dr.body=$("#em-body").value;
+function syncDraft(){const c=$("#composer");if(!c||!S.openId)return;const kind=c.dataset.kind,k=draftKey(S.openId,kind),dr=S.drafts[k];if(!dr)return;
+  dr.to=$("#em-to").value.trim();dr.cc=$("#em-cc").value.trim();dr.subject=$("#em-subj").value;
+  if(!$("#em-body").readOnly&&dr.body!==$("#em-body").value){
+    dr.body=$("#em-body").value;
+    const pv=$("#em-preview"),s=S.sponsorships.find(x=>x.id===S.openId);
+    if(pv&&s)pv.innerHTML=renderEmailHTML(kind,dr,s,S.config);
+  }
   const m=$("#mailtoBtn");if(m)m.href=mailtoHref(dr);}
 async function copyText(kind){
-  syncDraft();const c=$("#composer");if(!c)return;const dr=S.drafts[draftKey(S.openId,c.dataset.kind)];
-  const text=kind==="subject"?dr.subject:kind==="body"?dr.body:("To: "+dr.to+(dr.cc?"\nCc: "+dr.cc:"")+"\nSubject: "+dr.subject+"\n\n"+dr.body);
-  try{await navigator.clipboard.writeText(text);toast(kind==="all"?"Email copied. Paste it into Outlook.":kind==="subject"?"Subject copied":"Body copied");}
-  catch(e){const ta=$("#em-body");if(kind==="subject"){$("#em-subj").select();}else{ta.focus();ta.select();}toast("Press Ctrl+C to copy the selected text.");}
+  syncDraft();const c=$("#composer");if(!c)return;const emKind=c.dataset.kind,s=S.sponsorships.find(x=>x.id===S.openId),dr=S.drafts[draftKey(S.openId,emKind)];
+  if(kind==="html"){
+    const html=renderEmailHTML(emKind,dr,s,S.config);
+    try{
+      if(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write){
+        await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([html],{type:"text/html"}),"text/plain":new Blob([dr.body],{type:"text/plain"})})]);
+        return toast("Formatted email copied. Paste into Outlook.");
+      }
+    }catch(e){}
+    try{await navigator.clipboard.writeText(dr.body);return toast("Plain-text body copied (rich copy unavailable in this browser).");}
+    catch(e){dr.mode="edit";renderDrawer(false,true);const ta=$("#em-body");ta.focus();ta.select();return toast("Press Ctrl+C to copy the text.");}
+  }
+  const text=kind==="subject"?dr.subject:dr.body;
+  try{await navigator.clipboard.writeText(text);toast(kind==="subject"?"Subject copied":"Plain-text body copied");}
+  catch(e){if(kind==="subject"){$("#em-subj").select();}else{dr.mode="edit";renderDrawer(false,true);const ta=$("#em-body");ta.focus();ta.select();}toast("Press Ctrl+C to copy the selected text.");}
 }
 async function markSent(kind){
   syncDraft();const s=S.sponsorships.find(x=>x.id===S.openId);if(!s)return;const d=s.data,k=draftKey(s.id,kind),dr=S.drafts[k];
@@ -1976,6 +2108,7 @@ function bind(){
     if(t.id==="stopRead"){if(S.aiCtl)S.aiCtl.abort();return;}
     if(t.dataset.rmfile!=null){S.files.splice(+t.dataset.rmfile,1);renderFiles();return;}
     if(t.dataset.copy)return copyText(t.dataset.copy);
+    if(t.dataset.emmode){syncDraft();const c=$("#composer");if(c){const dr=S.drafts[draftKey(S.openId,c.dataset.kind)];if(dr){dr.mode=t.dataset.emmode;renderDrawer(false,true);}}return;}
     if(t.dataset.dlfile!=null)return dlFile(+t.dataset.dlfile);
     if(t.dataset.dlzip!=null)return dlZip();
     if(t.dataset.marksent)return markSent(t.dataset.marksent);
