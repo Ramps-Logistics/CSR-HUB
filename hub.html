@@ -564,7 +564,7 @@ dl.facts dt{color:var(--muted)}dl.facts dd{margin:0;min-width:0;overflow-wrap:an
         <div class="field"><label for="c-cc">Copy in on VP emails</label><input type="text" id="c-cc" maxlength="300" placeholder="supervisor@rampslogistics.com, ceo@rampslogistics.com"><small>For example the Communication Supervisor (SOP 8.2). Separate addresses with commas.</small></div>
         <div class="row2">
           <div class="field"><label for="c-sname">Emails signed by</label><input type="text" id="c-sname" maxlength="80"></div>
-          <div class="field"><label for="c-stitle">Their title</label><input type="text" id="c-stitle" maxlength="80" placeholder="CSR Coordinator"></div>
+          <div class="field"><label for="c-stitle">Their title</label><input type="text" id="c-stitle" maxlength="80" placeholder="Sr Marketing Strategist"></div>
         </div>
         <div class="row2"><div class="field"><label for="c-fy">Financial year starts in</label><select id="c-fy"></select><small>Sets the quarters used in Reports</small></div></div>
         <div class="actions"><button class="btn primary" type="submit">Save settings</button></div>
@@ -644,7 +644,7 @@ const DELIVERABLES={
   Platinum:["Two business meetings with key people in your organisation","A video from a key stakeholder on the initiative and its benefits","An opportunity for Ramps VPs to attend and speak","Ramps logo on all signage, with Ramps' own signage at the venue","6 influencer stories, 3 social posts and 2 press releases with images featuring Ramps","Space for 4 senior Ramps team members to attend and network","Room for 20 staff volunteers, each with 2 family members, in event t-shirts"]};
 // Fixed policy figures (TTD). Money is assessed, not paid out, from this hub.
 const DEFAULT_CONFIG={currency:"TTD",usdRate:6.79,donationMax:2000,bronzeMax:2000,silverMax:5000,goldMax:15000,ceoAbove:5000,eltAbove:20000,slaDays:14,
-  fyStartMonth:1,contacts:{vpName:"",vpEmail:"",cc:"",senderName:"",senderTitle:"CSR Coordinator"}};
+  fyStartMonth:1,contacts:{vpName:"",vpEmail:"",cc:"",senderName:"",senderTitle:"Sr Marketing Strategist"}};
 
 function partScore(p,ticks,x){const n=(ticks||[]).filter(k=>p.items.some(i=>i[0]===k)).length;if(p.max===5)return n>=5?(x?5:4):n;return Math.min(n,p.max);}
 function moneyBand(amt){return MONEY.find(m=>amt<=m.max);}
@@ -804,7 +804,7 @@ function firstName(n){return String(n||"").trim().split(/\s+/)[0]||"";}
 function emailFrom(s){const m=String(s||"").match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);return m?m[0]:"";}
 function ttd(n){return "TTD "+Math.round(+n||0).toLocaleString("en-US");}
 function dueDate(d,cfg){const t=new Date(d.submittedAt||Date.now());t.setDate(t.getDate()+cfg.slaDays);return t.toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});}
-function signoff(cfg){const c=cfg.contacts||{};return "Kind regards,\n"+(c.senderName||"[Your name]")+"\n"+(c.senderTitle||"CSR Coordinator")+"\nRamps Logistics";}
+function signoff(cfg){const c=cfg.contacts||{};return "Kind regards,\n"+(c.senderName||"[Your name]")+"\n"+(c.senderTitle||"Sr Marketing Strategist")+"\nRamps Logistics";}
 function templateEmail(kind,d,ctx,cfg){
   const a=d.assessment,c=cfg.contacts||{},vp=d.vp||{},ai=d.ai||{},name=d.project||d.org,greet="Dear "+(d.contact||d.org||"Sir or Madam")+",";
   const ref="["+d.ref+"] ";
@@ -2127,7 +2127,7 @@ function bind(){
       if(val==="partial"&&sug&&!sp.value)sp.value=sug.inKindOnly?"In-kind support: "+(s.data.resources||"TTD "+sug.amount.toLocaleString("en-US")+" of goods and services"):"TTD "+sug.amount.toLocaleString("en-US")+" towards "+(s.data.project||"the event");}if(e.target.name==="rv")$("#rvReason").hidden=e.target.value==="accept";});
   $("#contactsForm").addEventListener("submit",async e=>{e.preventDefault();
     const em=$("#c-vpemail").value.trim();if(em&&!emailFrom(em))return toast("That VP email doesn't look right.");
-    const contacts={vpName:$("#c-vpname").value.trim(),vpEmail:em,cc:$("#c-cc").value.trim(),senderName:$("#c-sname").value.trim(),senderTitle:$("#c-stitle").value.trim()||"CSR Coordinator"};
+    const contacts={vpName:$("#c-vpname").value.trim(),vpEmail:em,cc:$("#c-cc").value.trim(),senderName:$("#c-sname").value.trim(),senderTitle:$("#c-stitle").value.trim()||"Sr Marketing Strategist"};
     document.activeElement&&document.activeElement.blur();
     const fyStartMonth=Math.min(12,Math.max(1,+$("#c-fy").value||1));
     try{await S.db.doc("csr/config").set({contacts,fyStartMonth});S.drafts={};S.rq=null;toast("Settings saved");}catch(err){toast(dbErr(err));}});
